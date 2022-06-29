@@ -53,7 +53,6 @@ cmake -S . -B build \
     -DBUILD_WITH_TENSILE_HOST=ON \
     -DTensile_LIBRARY_FORMAT=yaml \
     -DTensile_COMPILER=hipcc \
-    -DTensile_MERGE_FILES=OFF \
     -DTensile_ARCHITECTURE=$TENSILE_ARCHITECTURE \
     -DTensile_LOGIC=asm_full \
     -DTensile_CODE_OBJECT_VERSION=V3 \
