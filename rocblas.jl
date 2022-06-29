@@ -9,7 +9,7 @@ version = v"4.2.0"
 sources = [
     ArchiveSource(
         "https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-$(version).tar.gz",
-        "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0")
+        "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0"),
 ]
 
 # Bash recipe for building across all platforms
@@ -17,10 +17,9 @@ script = raw"""
 cd ${WORKSPACE}/srcdir/rocBLAS*/
 mkdir build
 
-ln -s ${prefix}/bin/clang ${prefix}/tools/clang
-
 export ROCM_PATH=${prefix}
 export HIP_CLANG_PATH=${prefix}/tools
+export HIP_PATH=${prefix}/hip
 export HIP_CLANG_HCC_COMPAT_MODE=1
 export HIP_RUNTIME=rocclr
 export HIP_COMPILER=clang
@@ -28,37 +27,66 @@ export HIP_PLATFORM=amd
 export HIP_ROCCLR_HOME=${prefix}/lib
 export HIP_LIB_PATH=${prefix}/hip/lib
 export HIPCC_VERBOSE=1
-export AMDGPU_TARGETS="gfx900"
 
-export TENSILE_ROCM_ASSEMBLER_PATH=${prefix}/tools/clang++
-export TENSILE_ROCM_OFFLOAD_BUNDLER_PATH=${prefix}/tools/clang-offload-bundler
+export TENSILE_ARCHITECTURE="gfx900"
+# export TENSILE_ROCM_ASSEMBLER_PATH=${prefix}/tools/clang++
+# export TENSILE_ROCM_OFFLOAD_BUNDLER_PATH=${prefix}/tools/clang-offload-bundler
 
-export PATH="${prefix}/bin:${prefix}/hip/bin:${prefix}/tools:${PATH}"
+export PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}"
+export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
+
+ln -s ${prefix}/bin/clang ${prefix}/tools/clang
 
 # NOTE this is needed to avoid errors with zipping files older than 1980.
 unset SOURCE_DATE_EPOCH
 # pip install yaml
 pip install -U pip wheel setuptools
 
+ROCM_PATH=${prefix} \
+HIP_CLANG_PATH=${prefix}/tools \
+HIP_PATH=${prefix}/hip \
+HIP_CLANG_HCC_COMPAT_MODE=1 \
+HIP_RUNTIME=rocclr \
+HIP_COMPILER=clang \
+HIP_PLATFORM=amd \
+HIP_ROCCLR_HOME=${prefix}/lib \
+HIP_LIB_PATH=${prefix}/hip/lib \
+HIPCC_VERBOSE=1 \
+LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}" \
+PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}" \
 CXX=${prefix}/hip/bin/hipcc \
 cmake -S . -B build \
-      -DAMDGPU_TARGETS=$AMDGPU_TARGETS \
-      -DCMAKE_INSTALL_PREFIX=${prefix} \
-      -DCMAKE_PREFIX_PATH=${prefix} \
-      -DCMAKE_CXX_COMPILER=${prefix}/hip/bin/hipcc \
-      -DBUILD_WITH_TENSILE=ON \
-      -DBUILD_WITH_TENSILE_HOST=ON \
-      -DTensile_LIBRARY_FORMAT=yaml \
-      -DTensile_COMPILER=hipcc \
-      -DTensile_ARCHITECTURE=all \
-      -DTensile_LOGIC=asm_full \
-      -DTensile_CODE_OBJECT_VERSION=V3 \
-      -DBUILD_CLIENTS_TESTS=OFF \
-      -DBUILD_CLIENTS_BENCHMARKS=OFF \
-      -DBUILD_CLIENTS_SAMPLES=OFF \
-      -DBUILD_TESTING=OFF
+    -DROCM_PATH={prefix} \
+    -DCMAKE_INSTALL_PREFIX=${prefix} \
+    -DCMAKE_PREFIX_PATH=${prefix} \
+    -DCMAKE_CXX_COMPILER=${prefix}/hip/bin/hipcc \
+    -DBUILD_WITH_TENSILE=ON \
+    -DBUILD_WITH_TENSILE_HOST=ON \
+    -DTensile_LIBRARY_FORMAT=yaml \
+    -DTensile_COMPILER=hipcc \
+    -DTensile_ARCHITECTURE=$TENSILE_ARCHITECTURE \
+    -DTensile_LOGIC=asm_full \
+    -DTensile_CODE_OBJECT_VERSION=V3 \
+    -DBUILD_CLIENTS_TESTS=OFF \
+    -DBUILD_CLIENTS_BENCHMARKS=OFF \
+    -DBUILD_CLIENTS_SAMPLES=OFF \
+    -DBUILD_TESTING=OFF
 
+ROCM_PATH=${prefix} \
+HIP_CLANG_PATH=${prefix}/tools \
+HIP_PATH=${prefix}/hip \
+HIP_CLANG_HCC_COMPAT_MODE=1 \
+HIP_RUNTIME=rocclr \
+HIP_COMPILER=clang \
+HIP_PLATFORM=amd \
+HIP_ROCCLR_HOME=${prefix}/lib \
+HIP_LIB_PATH=${prefix}/hip/lib \
+HIPCC_VERBOSE=1 \
+LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}" \
+PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}" \
+CXX=${prefix}/hip/bin/hipcc \
 make -C build install
+
 rm ${prefix}/tools/clang
 """
 
