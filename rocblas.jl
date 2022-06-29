@@ -29,32 +29,21 @@ export HIP_LIB_PATH=${prefix}/hip/lib
 export HIPCC_VERBOSE=1
 
 export TENSILE_ARCHITECTURE="gfx900"
-# export TENSILE_ROCM_ASSEMBLER_PATH=${prefix}/tools/clang++
-# export TENSILE_ROCM_OFFLOAD_BUNDLER_PATH=${prefix}/tools/clang-offload-bundler
 
 export PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}"
 export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
 
 ln -s ${prefix}/bin/clang ${prefix}/tools/clang
+ln -s ${prefix}/bin/lld ${prefix}/tools/lld
 
 # NOTE this is needed to avoid errors with zipping files older than 1980.
 unset SOURCE_DATE_EPOCH
 # pip install yaml
 pip install -U pip wheel setuptools
 
-ROCM_PATH=${prefix} \
-HIP_CLANG_PATH=${prefix}/tools \
-HIP_PATH=${prefix}/hip \
-HIP_CLANG_HCC_COMPAT_MODE=1 \
-HIP_RUNTIME=rocclr \
-HIP_COMPILER=clang \
-HIP_PLATFORM=amd \
-HIP_ROCCLR_HOME=${prefix}/lib \
-HIP_LIB_PATH=${prefix}/hip/lib \
-HIPCC_VERBOSE=1 \
-LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}" \
-PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}" \
-CXX=${prefix}/hip/bin/hipcc \
+# TODO: set correct path
+# HIP_CLANG_INCLUDE_PATH=${prefix}/hip/include
+
 cmake -S . -B build \
     -DROCM_PATH={prefix} \
     -DCMAKE_INSTALL_PREFIX=${prefix} \
@@ -64,6 +53,7 @@ cmake -S . -B build \
     -DBUILD_WITH_TENSILE_HOST=ON \
     -DTensile_LIBRARY_FORMAT=yaml \
     -DTensile_COMPILER=hipcc \
+    -DTensile_MERGE_FILES=OFF \
     -DTensile_ARCHITECTURE=$TENSILE_ARCHITECTURE \
     -DTensile_LOGIC=asm_full \
     -DTensile_CODE_OBJECT_VERSION=V3 \
@@ -72,19 +62,6 @@ cmake -S . -B build \
     -DBUILD_CLIENTS_SAMPLES=OFF \
     -DBUILD_TESTING=OFF
 
-ROCM_PATH=${prefix} \
-HIP_CLANG_PATH=${prefix}/tools \
-HIP_PATH=${prefix}/hip \
-HIP_CLANG_HCC_COMPAT_MODE=1 \
-HIP_RUNTIME=rocclr \
-HIP_COMPILER=clang \
-HIP_PLATFORM=amd \
-HIP_ROCCLR_HOME=${prefix}/lib \
-HIP_LIB_PATH=${prefix}/hip/lib \
-HIPCC_VERBOSE=1 \
-LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}" \
-PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}" \
-CXX=${prefix}/hip/bin/hipcc \
 make -C build install
 
 rm ${prefix}/tools/clang
