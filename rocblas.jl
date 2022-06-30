@@ -1,6 +1,7 @@
 # Note that this script can accept some limited command-line arguments, run
 # `julia build_tarballs.jl --help` to see a usage message.
-using BinaryBuilder, Pkg
+using BinaryBuilder
+using Pkg
 
 name = "rocBLAS"
 version = v"4.2.0"
@@ -36,13 +37,19 @@ export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
 ln -s ${prefix}/bin/clang ${prefix}/tools/clang
 ln -s ${prefix}/bin/lld ${prefix}/tools/lld
 
-# NOTE this is needed to avoid errors with zipping files older than 1980.
+# NOTE
+# Looking at hcc-cmd, it is clear that it is omitting 'hip/include' directory.
+# Therefore we symlink to other directory that it looks at.
+# TODO is there a better fix?
+mkdir ${prefix}/lib/include
+ln -s ${prefix}/hip/include/* ${prefix}/lib/include
+
+# NOTE
+# This is needed to avoid errors with zipping files older than 1980.
+# See: https://github.com/pypa/wheel/issues/418
 unset SOURCE_DATE_EPOCH
 # pip install yaml
 pip install -U pip wheel setuptools
-
-# TODO: set correct path
-# HIP_CLANG_INCLUDE_PATH=${prefix}/hip/include
 
 cmake -S . -B build \
     -DROCM_PATH={prefix} \
