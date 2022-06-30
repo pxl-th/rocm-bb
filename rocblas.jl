@@ -11,6 +11,7 @@ sources = [
     ArchiveSource(
         "https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-$(version).tar.gz",
         "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0"),
+    DirectorySource("./bundled"),
 ]
 
 # Bash recipe for building across all platforms
@@ -31,8 +32,11 @@ export HIPCC_VERBOSE=1
 
 export TENSILE_ARCHITECTURE="gfx900"
 
-export PATH="${prefix}/tools:${prefix}/hip/bin:${PATH}"
+export PATH="${prefix}/bin:${prefix}/tools:${prefix}/hip/bin:${PATH}"
 export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
+
+# FIX: Add explicit device norm calls for blas.
+atomic_patch -p1 $WORKSPACE/srcdir/patches/add-norm.patch
 
 ln -s ${prefix}/bin/clang ${prefix}/tools/clang
 ln -s ${prefix}/bin/lld ${prefix}/tools/lld
@@ -82,7 +86,7 @@ platforms = [
 
 # The products that we will ensure are always built
 products = [
-    LibraryProduct(["librocblas"], :librocblas, ["rocblas/lib"]),
+    LibraryProduct(["librocblas", "librocblas.so.0", "librocblas.so.0.1"], :librocblas, ["rocblas/lib"]),
 ]
 
 # Dependencies that must be installed before this package can be built
