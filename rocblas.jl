@@ -40,7 +40,7 @@ BB_COMPILE_FLAGS=" -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}
 
 # BB link HIPCC flags:
 BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
-BB_LINK_FLAGS=" --sysroot=/opt/${target}/${target}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L/opt/${target}/${target}/lib64"
+BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L ${BB_COMPILE_BASE_DIR}/lib64"
 
 # Set compile & link flags for hipcc.
 export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
