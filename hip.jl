@@ -18,33 +18,25 @@ sources = [
 script = raw"""
 cd ${WORKSPACE}/srcdir/HIP*/
 
-# # disable tests
-# atomic_patch -p1 "${WORKSPACE}/srcdir/patches/disable-tests.patch"
+# Disable tests.
+atomic_patch -p1 "${WORKSPACE}/srcdir/patches/disable-tests.patch"
 
 apk add coreutils dateutils
 
 mkdir build && cd build
-ln -s ${prefix}/bin/clang ${prefix}/tools/clang
 
-export ROCM_PATH=${prefix}
+# Sets HIP_COMPILER=clang & HIP_RUNTIME=rocclr.
 export HIP_PLATFORM=amd
-export HIP_LIB_PATH=${prefix}/hip/lib
-export HIP_ROCCLR_HOME=${prefix}/lib
-export HIP_CLANG_PATH=${prefix}/tools
-export DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode
 export HSA_PATH=${prefix}
 
 cmake -DCMAKE_INSTALL_PREFIX=${prefix}/hip \
       -DCMAKE_PREFIX_PATH=${prefix} \
-      -DCMAKE_BUILD_TYPE=Release \
+      -DROCM_PATH=${prefix} \
       -D__HIP_ENABLE_PCH=OFF \
       ..
 
 make -j${nproc}
 make install
-
-# Cleanup
-rm ${prefix}/tools/clang
 """
 
 # These are the platforms we will build for by default, unless further

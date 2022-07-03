@@ -19,21 +19,32 @@ script = raw"""
 cd ${WORKSPACE}/srcdir/rocBLAS*/
 mkdir build
 
-# ENV variables from HIP_jll.
 export ROCM_PATH=${prefix}
-export DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode
 
+# HIP env variables: https://github.com/ROCm-Developer-Tools/HIP/blob/rocm-4.2.0/bin/hipcc
 export HIP_PLATFORM=amd
-export HIP_LIB_PATH=${prefix}/hip/lib
+export HSA_PATH=${prefix}
 export HIP_ROCCLR_HOME=${prefix}/lib
 export HIP_CLANG_PATH=${prefix}/tools
-export HIP_PATH=${prefix}/hip
-export HIP_CLANG_HCC_COMPAT_MODE=1
-export HIP_RUNTIME=rocclr
-export HIP_COMPILER=clang
-export HIPCC_VERBOSE=1
 
-export TENSILE_ARCHITECTURE="gfx900"
+# Other HIPCC env variables.
+export HIPCC_VERBOSE=1
+export HIP_LIB_PATH=${prefix}/hip/lib
+export DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode
+export HIP_CLANG_HCC_COMPAT_MODE=1
+
+# BB compile HIPCC flags:
+BB_COMPILE_BASE_DIR=/opt/${target}/${target}
+BB_COMPILE_CPP_DIR=${BB_COMPILE_BASE_DIR}/include/c++/*
+BB_COMPILE_FLAGS=" -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}/${target} --sysroot=${BB_COMPILE_BASE_DIR}/sys-root"
+
+# BB link HIPCC flags:
+BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
+BB_LINK_FLAGS=" --sysroot=/opt/${target}/${target}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L/opt/${target}/${target}/lib64"
+
+# Set compile & link flags for hipcc.
+export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
+export HIPCC_LINK_FLAGS_APPEND=$BB_LINK_FLAGS
 
 export PATH="${prefix}/bin:${prefix}/tools:${prefix}/hip/bin:${PATH}"
 export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
@@ -69,7 +80,7 @@ cmake -S . -B build \
     -DBUILD_WITH_TENSILE_HOST=ON \
     -DTensile_LIBRARY_FORMAT=yaml \
     -DTensile_COMPILER=hipcc \
-    -DTensile_ARCHITECTURE=$TENSILE_ARCHITECTURE \
+    -DTensile_ARCHITECTURE="gfx900" \
     -DTensile_LOGIC=asm_full \
     -DTensile_CODE_OBJECT_VERSION=V3 \
     -DBUILD_CLIENTS_TESTS=OFF \
@@ -77,9 +88,10 @@ cmake -S . -B build \
     -DBUILD_CLIENTS_SAMPLES=OFF \
     -DBUILD_TESTING=OFF
 
-make -j{nproc} -C build install
+make -j${nproc} -C build install
 
 rm ${prefix}/tools/clang
+rm ${prefix}/tools/lld
 """
 
 # These are the platforms we will build for by default, unless further
