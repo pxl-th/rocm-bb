@@ -11,7 +11,7 @@ sources = [
     ArchiveSource(
         "https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-$(version).tar.gz",
         "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0"),
-    DirectorySource("./bundled"),
+    DirectorySource("./bundled-rocblas"),
 ]
 
 # Bash recipe for building across all platforms
@@ -34,17 +34,17 @@ export DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode
 export HIP_CLANG_HCC_COMPAT_MODE=1
 
 # BB compile HIPCC flags:
-BB_COMPILE_BASE_DIR=/opt/${target}/${target}
-BB_COMPILE_CPP_DIR=${BB_COMPILE_BASE_DIR}/include/c++/*
-BB_COMPILE_FLAGS=" -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}/${target} --sysroot=${BB_COMPILE_BASE_DIR}/sys-root"
+# BB_COMPILE_BASE_DIR=/opt/${target}/${target}
+# BB_COMPILE_CPP_DIR=${BB_COMPILE_BASE_DIR}/include/c++/*
+# BB_COMPILE_FLAGS=" -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}/${target} --sysroot=${BB_COMPILE_BASE_DIR}/sys-root"
 
 # BB link HIPCC flags:
-BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
-BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L ${BB_COMPILE_BASE_DIR}/lib64"
+# BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
+# BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L ${BB_COMPILE_BASE_DIR}/lib64"
 
 # Set compile & link flags for hipcc.
-export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
-export HIPCC_LINK_FLAGS_APPEND=$BB_LINK_FLAGS
+# export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
+# export HIPCC_LINK_FLAGS_APPEND=$BB_LINK_FLAGS
 
 export PATH="${prefix}/bin:${prefix}/tools:${prefix}/hip/bin:${PATH}"
 export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
@@ -71,6 +71,7 @@ unset SOURCE_DATE_EPOCH
 pip install -U pip wheel setuptools
 
 cmake -S . -B build \
+    -DCMAKE_TOOLCHAIN=${CMAKE_TARGET_TOOLCHAIN} \
     -DCMAKE_BUILD_TYPE=Release \
     -DROCM_PATH={prefix} \
     -DCMAKE_INSTALL_PREFIX=${prefix} \
@@ -90,8 +91,8 @@ cmake -S . -B build \
 
 make -j${nproc} -C build install
 
-rm ${prefix}/tools/clang
-rm ${prefix}/tools/lld
+# rm ${prefix}/tools/clang
+# rm ${prefix}/tools/lld
 """
 
 # These are the platforms we will build for by default, unless further

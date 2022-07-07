@@ -29,8 +29,12 @@ mkdir build && cd build
 export HIP_PLATFORM=amd
 export HSA_PATH=${prefix}
 
+ln -s ${prefix}/bin/clang ${prefix}/tools/clang
+ln -s ${prefix}/bin/lld ${prefix}/tools/lld
+
 cmake -DCMAKE_INSTALL_PREFIX=${prefix}/hip \
       -DCMAKE_PREFIX_PATH=${prefix} \
+      -DCMAKE_TOOLCHAIN=${CMAKE_TARGET_TOOLCHAIN} \
       -DROCM_PATH=${prefix} \
       -D__HIP_ENABLE_PCH=OFF \
       ..
@@ -41,9 +45,7 @@ make install
 
 # These are the platforms we will build for by default, unless further
 # platforms are passed in on the command line
-platforms = [
-    Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11"),
-]
+platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
 platforms = expand_cxxstring_abis(platforms)
 
 # The products that we will ensure are always built
