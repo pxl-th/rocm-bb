@@ -8,24 +8,30 @@ sources = [
     ArchiveSource(
         "https://github.com/RadeonOpenCompute/ROCR-Runtime/archive/rocm-$(version).tar.gz",
         "fa0e7bcd64e97cbff7c39c9e87c84a49d2184dc977b341794770805ec3f896cc"),
+    DirectorySource("./bundled-rocr"),
 ]
 
 script = raw"""
 cd ${WORKSPACE}/srcdir/ROCR-Runtime*/
 
-ln -s ${prefix}/bin/clang ${prefix}/tools/clang
-ln -s ${prefix}/bin/lld ${prefix}/tools/lld
+# Disable -Werror flag.
+mv ${WORKSPACE}/srcdir/scripts/1-no-werror.patch ${WORKSPACE}/srcdir/ROCR-Runtime*/
+atomic_patch -p1 ./1-no-werror.patch
 
-export PATH="${prefix}/tools:${PATH}"
-
+mv ${WORKSPACE}/srcdir/scripts/* ${prefix}
 mkdir build && cd build
+
+# ln -s ${prefix}/bin/clang ${prefix}/tools/clang
+# ln -s ${prefix}/bin/lld ${prefix}/tools/lld
+
+export PATH="${prefix}/bin:${prefix}/tools:${PATH}"
+
+CC=${prefix}/rocm-clang \
+CXX=${prefix}/rocm-clang++ \
 cmake \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DCMAKE_INSTALL_PREFIX=${prefix} \
-    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TARGET_TOOLCHAIN%.*}_clang.cmake \
     -DBITCODE_DIR=${prefix}/amdgcn/bitcode \
-    -DLLVM_DIR="${prefix}/lib/cmake/llvm" \
-    -DClang_DIR="${prefix}/lib/cmake/clang" \
     ../src
 
 make -j${nproc}
