@@ -19,6 +19,7 @@ cd ${WORKSPACE}/srcdir/HIP*/
 
 # Disable tests.
 atomic_patch -p1 "${WORKSPACE}/srcdir/patches/disable-tests.patch"
+atomic_patch -p1 "${WORKSPACE}/srcdir/patches/0003-Improve-compilation-without-git-repo-and-remove-compiler-rt-linkage-for-host.4.2.0.patch"
 
 mkdir build && cd build
 
