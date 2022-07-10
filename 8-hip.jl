@@ -23,6 +23,8 @@ atomic_patch -p1 "${WORKSPACE}/srcdir/patches/disable-tests.patch"
 mkdir build && cd build
 
 # Sets HIP_COMPILER=clang & HIP_RUNTIME=rocclr.
+export HIP_RUNTIME=rocclr
+export HIP_COMPILER=clang
 export HIP_PLATFORM=amd
 export HSA_PATH=${prefix}
 export PATH="${prefix}/bin:${prefix}/tools:${PATH}"
@@ -35,6 +37,9 @@ cmake \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DROCM_PATH=${prefix} \
     -DHSA_PATH=${prefix}/hsa \
+    -DHIP_PLATFORM=${HIP_PLATFORM} \
+    -DHIP_RUNTIME=${HIP_RUNTIME} \
+    -DHIP_COMPILER=${HIP_COMPILER} \
     -D__HIP_ENABLE_PCH=OFF \
     ..
 
