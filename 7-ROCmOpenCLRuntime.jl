@@ -53,7 +53,7 @@ products = [
     # TODO: LibraryProduct(["libOpenCL"], :libOpenCL),
 ]
 
-DEV_DIR = "/home/pxl-th/.julia/dev"
+DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
     BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
     BuildDependency(PackageSpec(;

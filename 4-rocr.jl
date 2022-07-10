@@ -42,7 +42,7 @@ platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
 platforms = expand_cxxstring_abis(platforms)
 products = [LibraryProduct(["libhsa-runtime64"], :libhsa_runtime64)]
 
-DEV_DIR = "/home/pxl-th/.julia/dev"
+DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
     BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version=v"4.2.0")),
     Dependency(PackageSpec(;

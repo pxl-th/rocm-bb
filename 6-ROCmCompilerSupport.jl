@@ -37,7 +37,7 @@ platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
 
 products = [LibraryProduct(["libamd_comgr"], :libamd_comgr)]
 
-DEV_DIR = "/home/pxl-th/.julia/dev"
+DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
     BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
     BuildDependency(PackageSpec(;

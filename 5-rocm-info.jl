@@ -33,7 +33,7 @@ products = [
     ExecutableProduct("rocm_agent_enumerator", :rocm_agent_enumerator),
 ]
 
-DEV_DIR = "/home/pxl-th/.julia/dev"
+DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
     Dependency(PackageSpec(;
         name="hsa_rocr_jll",

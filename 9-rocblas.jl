@@ -25,14 +25,23 @@ export HIP_PLATFORM=amd
 export HSA_PATH=${prefix}
 export HIP_ROCCLR_HOME=${prefix}/lib
 export HIP_CLANG_PATH=${prefix}/tools
-export HIP_RUNTIME=rocclr
-export HIP_COMPILER=clang
 
 # Other HIPCC env variables.
 export HIPCC_VERBOSE=1
 export HIP_LIB_PATH=${prefix}/hip/lib
 export DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode
 export HIP_CLANG_HCC_COMPAT_MODE=1
+
+# ROCM_PATH=${prefix} \
+# HIP_PATH=${prefix}/hip \
+# HIP_PLATFORM=amd \
+# HSA_PATH=${prefix} \
+# HIP_ROCCLR_HOME=${prefix}/lib \
+# HIP_CLANG_PATH=${prefix}/tools \
+# HIPCC_VERBOSE=1 \
+# HIP_LIB_PATH=${prefix}/hip/lib \
+# DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode \
+# HIP_CLANG_HCC_COMPAT_MODE=1 \
 
 export PATH="${prefix}/bin:${prefix}/tools:${prefix}/hip/bin:${PATH}"
 export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
@@ -66,6 +75,7 @@ cmake -S . -B build \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DCMAKE_BUILD_TYPE=Release \
     -DROCM_PATH={prefix} \
+    -DBUILD_VERBOSE=ON \
     -DBUILD_WITH_TENSILE=ON \
     -DBUILD_WITH_TENSILE_HOST=ON \
     -DTensile_LIBRARY_FORMAT=yaml \
@@ -86,7 +96,7 @@ platforms = expand_cxxstring_abis(platforms)
 
 products = [LibraryProduct(["librocblas"], :librocblas, ["rocblas/lib"])]
 
-DEV_DIR = "/home/pxl-th/.julia/dev"
+DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
     BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
     BuildDependency(PackageSpec(;
