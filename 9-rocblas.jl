@@ -47,17 +47,6 @@ BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} 
 export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
 export HIPCC_LINK_FLAGS_APPEND=$BB_LINK_FLAGS
 
-# ROCM_PATH=${prefix} \
-# HIP_PATH=${prefix}/hip \
-# HIP_PLATFORM=amd \
-# HSA_PATH=${prefix} \
-# HIP_ROCCLR_HOME=${prefix}/lib \
-# HIP_CLANG_PATH=${prefix}/tools \
-# HIPCC_VERBOSE=1 \
-# HIP_LIB_PATH=${prefix}/hip/lib \
-# DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode \
-# HIP_CLANG_HCC_COMPAT_MODE=1 \
-
 export PATH="${prefix}/bin:${prefix}/tools:${prefix}/hip/bin:${PATH}"
 export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
 
