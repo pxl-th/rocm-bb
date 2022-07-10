@@ -1,0 +1,25 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4c33a68e..32b6b0c8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -236,6 +236,8 @@ endif()
+ # Find HIP dependencies
+ if( CMAKE_CXX_COMPILER MATCHES ".*/hipcc$" )
+   find_package( hip REQUIRED CONFIG PATHS ${ROCM_PATH} /opt/rocm )
++  message(STATUS ${hip_FOUND})
++  message(STATUS ${hip_LIBRARIES})
+ endif( )
+ 
+ message(STATUS "Using AMDGPU_TARGETS: ${AMDGPU_TARGETS}")
+diff --git a/library/CMakeLists.txt b/library/CMakeLists.txt
+index d8b8f68c..68bdac35 100755
+--- a/library/CMakeLists.txt
++++ b/library/CMakeLists.txt
+@@ -128,6 +128,7 @@ add_subdirectory( src )
+ # Package specific CPACK vars
+ # As of ROCm 3.8, HIP_RUNTIME has been changed from "ROCclr" to "rocclr"
+ # As of ROCm 3.8, HIP_RUNTIME has been changed from "cuda" to "cudart"
++message(STATUS "HIP Runtime: ${HIP_RUNTIME}")
+ string( TOLOWER "${HIP_RUNTIME}" HIP_RUNTIME_LOWER )
+ if( HIP_RUNTIME_LOWER STREQUAL "rocclr" )
+   set( RPM_REQUIREMENTS "hip-rocclr >= 3.5.0" )

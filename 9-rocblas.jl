@@ -12,7 +12,7 @@ sources = [
 ]
 
 script = raw"""
-mv ${WORKSPACE}/srcdir/scripts/hipcc-wrapper ${prefix}
+mv ${WORKSPACE}/srcdir/scripts/hipcc ${prefix}
 
 cd ${WORKSPACE}/srcdir/rocBLAS*/
 mkdir build
@@ -22,6 +22,8 @@ export HIP_PATH=${prefix}/hip
 
 # HIP env variables: https://github.com/ROCm-Developer-Tools/HIP/blob/rocm-4.2.0/bin/hipcc
 export HIP_PLATFORM=amd
+export HIP_RUNTIME=rocclr
+export HIP_COMPILER=clang
 export HSA_PATH=${prefix}
 export HIP_ROCCLR_HOME=${prefix}/lib
 export HIP_CLANG_PATH=${prefix}/tools
@@ -31,6 +33,19 @@ export HIPCC_VERBOSE=1
 export HIP_LIB_PATH=${prefix}/hip/lib
 export DEVICE_LIB_PATH=${prefix}/amdgcn/bitcode
 export HIP_CLANG_HCC_COMPAT_MODE=1
+
+# BB compile HIPCC flags:
+BB_COMPILE_BASE_DIR=/opt/${target}/${target}
+BB_COMPILE_CPP_DIR=${BB_COMPILE_BASE_DIR}/include/c++/*
+BB_COMPILE_FLAGS=" -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}/${target} --sysroot=${BB_COMPILE_BASE_DIR}/sys-root"
+
+# BB link HIPCC flags:
+BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
+BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L ${BB_COMPILE_BASE_DIR}/lib64"
+
+# Set compile & link flags for hipcc.
+export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
+export HIPCC_LINK_FLAGS_APPEND=$BB_LINK_FLAGS
 
 # ROCM_PATH=${prefix} \
 # HIP_PATH=${prefix}/hip \
@@ -68,12 +83,12 @@ pip install -U pip wheel setuptools
 
 export TENSILE_ARCHITECTURE="gfx900"
 
-CXX=${prefix}/hipcc-wrapper \
-CXXFLAGS="$CXXFLAGS -fcf-protection=none " \
+CXX=${prefix}/hipcc \
 cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=${prefix} \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_COMPILER=${prefix}/hipcc \
     -DROCM_PATH={prefix} \
     -DBUILD_VERBOSE=ON \
     -DBUILD_WITH_TENSILE=ON \
