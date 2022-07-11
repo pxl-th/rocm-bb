@@ -8,12 +8,9 @@ sources = [
     ArchiveSource(
         "https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-$(version).tar.gz",
         "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0"),
-    DirectorySource("./bundled-rocblas"),
 ]
 
 script = raw"""
-mv ${WORKSPACE}/srcdir/scripts/hipcc ${prefix}
-
 cd ${WORKSPACE}/srcdir/rocBLAS*/
 mkdir build
 
@@ -37,7 +34,8 @@ export HIP_CLANG_HCC_COMPAT_MODE=1
 # BB compile HIPCC flags:
 BB_COMPILE_BASE_DIR=/opt/${target}/${target}
 BB_COMPILE_CPP_DIR=${BB_COMPILE_BASE_DIR}/include/c++/*
-BB_COMPILE_FLAGS=" -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}/${target} --sysroot=${BB_COMPILE_BASE_DIR}/sys-root"
+OMP_DIR=/opt/${target}/lib/gcc/${target}/*/include
+BB_COMPILE_FLAGS=" -isystem ${OMP_DIR} -isystem ${BB_COMPILE_CPP_DIR} -isystem ${BB_COMPILE_CPP_DIR}/${target} --sysroot=${BB_COMPILE_BASE_DIR}/sys-root"
 
 # BB link HIPCC flags:
 BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
@@ -54,13 +52,8 @@ ln -s ${prefix}/bin/clang ${prefix}/tools/clang
 ln -s ${prefix}/bin/lld ${prefix}/tools/lld
 
 # NOTE
-# Add explicit device norm calls for blas.
-atomic_patch -p1 $WORKSPACE/srcdir/patches/add-norm.patch
-
-# NOTE
 # Looking at hcc-cmd, it is clear that it is omitting 'hip/include' directory.
 # Therefore we symlink to other directory that it looks at.
-# TODO is there a better fix?
 mkdir ${prefix}/lib/include
 ln -s ${prefix}/hip/include/* ${prefix}/lib/include
 
@@ -72,12 +65,12 @@ pip install -U pip wheel setuptools
 
 export TENSILE_ARCHITECTURE="gfx900"
 
-CXX=${prefix}/hipcc \
+CXX=${prefix}/hip/bin/hipcc \
 cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=${prefix} \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_COMPILER=${prefix}/hipcc \
+    -DCMAKE_CXX_COMPILER=${prefix}/hip/bin/hipcc \
     -DROCM_PATH={prefix} \
     -DBUILD_VERBOSE=ON \
     -DBUILD_WITH_TENSILE=ON \
@@ -91,6 +84,7 @@ cmake -S . -B build \
     -DBUILD_CLIENTS_BENCHMARKS=OFF \
     -DBUILD_CLIENTS_SAMPLES=OFF \
     -DBUILD_TESTING=OFF
+pip intall yaml
 
 make -j${nproc} -C build install
 """
@@ -124,6 +118,7 @@ dependencies = [
     Dependency(PackageSpec(;
         name="HIP_jll", path=joinpath(DEV_DIR, "HIP_jll"));
         compat=string(version)),
+    Dependency("IntelOpenMP_jll"),
 ]
 
 build_tarballs(
