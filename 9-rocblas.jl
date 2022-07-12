@@ -84,7 +84,6 @@ cmake -S . -B build \
     -DBUILD_CLIENTS_BENCHMARKS=OFF \
     -DBUILD_CLIENTS_SAMPLES=OFF \
     -DBUILD_TESTING=OFF
-pip intall yaml
 
 make -j${nproc} -C build install
 """
