@@ -71,6 +71,7 @@ cmake -S . -B build \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_COMPILER=${prefix}/hip/bin/hipcc \
+    -DCMAKE_CXX_FLAGS="-fuse-ld=lld" \
     -DROCM_PATH={prefix} \
     -DBUILD_VERBOSE=ON \
     -DBUILD_WITH_TENSILE=ON \
