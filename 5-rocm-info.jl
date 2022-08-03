@@ -26,7 +26,6 @@ make install
 """
 
 platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
-platforms = expand_cxxstring_abis(platforms)
 
 products = [
     ExecutableProduct("rocminfo", :rocminfo),
@@ -43,4 +42,4 @@ dependencies = [
 
 build_tarballs(
     ARGS, name, version, sources, script, platforms, products, dependencies;
-    preferred_gcc_version=v"9", preferred_llvm_version=v"12")
+    preferred_gcc_version=v"7", preferred_llvm_version=v"9", julia_compat="1.7")

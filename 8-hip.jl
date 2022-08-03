@@ -48,7 +48,6 @@ make install
 """
 
 platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
-platforms = expand_cxxstring_abis(platforms)
 
 products = [
     LibraryProduct(["libamdhip64"], :libamdhip64, ["hip/lib"]),
@@ -57,7 +56,11 @@ products = [
 
 DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
-    BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
+    # BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
+    BuildDependency(PackageSpec(;
+        name="ROCmLLVM_jll",
+        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
+        version)),
     BuildDependency(PackageSpec(;
         name="rocm_cmake_jll",
         path=joinpath(DEV_DIR, "rocm_cmake_jll"),

@@ -46,7 +46,6 @@ make install
 """
 
 platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
-platforms = expand_cxxstring_abis(platforms)
 
 products = [
     FileProduct("lib/libamdrocclr_static.a", :libamdrocclr_static),
@@ -55,7 +54,11 @@ products = [
 
 DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
-    BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
+    # BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
+    BuildDependency(PackageSpec(;
+        name="ROCmLLVM_jll",
+        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
+        version)),
     BuildDependency(PackageSpec(;
         name="rocm_cmake_jll",
         path=joinpath(DEV_DIR, "rocm_cmake_jll"),
@@ -83,4 +86,4 @@ dependencies = [
 
 build_tarballs(
     ARGS, name, version, sources, script, platforms, products, dependencies,
-    preferred_gcc_version=v"9", preferred_llvm_version=v"12")
+    preferred_gcc_version=v"7", preferred_llvm_version=v"9", julia_compat="1.7")

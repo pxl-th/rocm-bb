@@ -23,7 +23,7 @@ export HIP_RUNTIME=rocclr
 export HIP_COMPILER=clang
 export HSA_PATH=${prefix}
 export HIP_ROCCLR_HOME=${prefix}/lib
-export HIP_CLANG_PATH=${prefix}/tools
+export HIP_CLANG_PATH=${prefix}/llvm/bin
 
 # Other HIPCC env variables.
 export HIPCC_VERBOSE=1
@@ -39,17 +39,14 @@ BB_COMPILE_FLAGS=" -isystem ${OMP_DIR} -isystem ${BB_COMPILE_CPP_DIR} -isystem $
 
 # BB link HIPCC flags:
 BB_LINK_GCC_DIR=/opt/${target}/lib/gcc/${target}/*
-BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L ${BB_COMPILE_BASE_DIR}/lib64"
+BB_LINK_FLAGS=" --sysroot=${BB_COMPILE_BASE_DIR}/sys-root -B ${BB_LINK_GCC_DIR} -L ${BB_LINK_GCC_DIR}  -L ${BB_COMPILE_BASE_DIR}/lib64 -L ${prefix}/lib"
 
 # Set compile & link flags for hipcc.
 export HIPCC_COMPILE_FLAGS_APPEND=$BB_COMPILE_FLAGS
 export HIPCC_LINK_FLAGS_APPEND=$BB_LINK_FLAGS
 
-export PATH="${prefix}/bin:${prefix}/tools:${prefix}/hip/bin:${PATH}"
-export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/lib64:${LD_LIBRARY_PATH}"
-
-ln -s ${prefix}/bin/clang ${prefix}/tools/clang
-ln -s ${prefix}/bin/lld ${prefix}/tools/lld
+export PATH="${prefix}/hip/bin:${prefix}/llvm/bin:${PATH}"
+export LD_LIBRARY_PATH="${prefix}/lib:${prefix}/llvm/lib:${LD_LIBRARY_PATH}"
 
 # NOTE
 # Looking at hcc-cmd, it is clear that it is omitting 'hip/include' directory.
@@ -96,7 +93,11 @@ products = [LibraryProduct(["librocblas"], :librocblas, ["rocblas/lib"])]
 
 DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
-    BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
+    # BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
+    BuildDependency(PackageSpec(;
+        name="ROCmLLVM_jll",
+        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
+        version)),
     BuildDependency(PackageSpec(;
         name="rocm_cmake_jll", version,
         path=joinpath(DEV_DIR, "rocm_cmake_jll"))),
@@ -123,4 +124,4 @@ dependencies = [
 
 build_tarballs(
     ARGS, name, version, sources, script, platforms, products, dependencies,
-    preferred_gcc_version=v"9", preferred_llvm_version=v"12")
+    preferred_gcc_version=v"7", preferred_llvm_version=v"9")
