@@ -21,11 +21,6 @@ atomic_patch -p1 ./1-no-werror.patch
 mv ${WORKSPACE}/srcdir/scripts/* ${prefix}
 mkdir build && cd build
 
-# ln -s ${prefix}/bin/clang ${prefix}/tools/clang
-# ln -s ${prefix}/bin/lld ${prefix}/tools/lld
-
-export PATH="${prefix}/bin:${prefix}/tools:${PATH}"
-
 CC=${prefix}/rocm-clang \
 CXX=${prefix}/rocm-clang++ \
 cmake \
@@ -39,12 +34,15 @@ make install
 """
 
 platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
-platforms = expand_cxxstring_abis(platforms)
 products = [LibraryProduct(["libhsa-runtime64"], :libhsa_runtime64)]
 
 DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
-    BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version=v"4.2.0")),
+    # BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version=v"4.2.0")),
+    BuildDependency(PackageSpec(;
+        name="ROCmLLVM_jll",
+        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
+        version)),
     Dependency(PackageSpec(;
         name="hsakmt_roct_jll",
         path=joinpath(DEV_DIR, "hsakmt_roct_jll"));
@@ -61,4 +59,4 @@ dependencies = [
 
 build_tarballs(
     ARGS, name, version, sources, script, platforms, products, dependencies;
-    preferred_gcc_version=v"9", preferred_llvm_version=v"12")
+    preferred_gcc_version=v"7", preferred_llvm_version=v"9", julia_compat="1.7")

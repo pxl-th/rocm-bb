@@ -2,12 +2,12 @@ using Pkg
 using BinaryBuilder
 
 name = "hsakmt_roct"
-version = v"4.2.0"
+version = v"4.5.2"
 
 sources = [
     ArchiveSource(
         "https://github.com/RadeonOpenCompute/ROCT-Thunk-Interface/archive/rocm-$(version).tar.gz",
-        "cc325d4b9a96062f2ad0515fce724a8c64ba56a7d7f1ac4a0753941b8599c52e"),
+        "fb8e44226b9e393baf51bfcb9873f63ce7e4fcf7ee7f530979cf51857ea4d24b"),
 ]
 
 script = raw"""
@@ -24,7 +24,6 @@ make install
 """
 
 platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
-platforms = expand_cxxstring_abis(platforms)
 products = [LibraryProduct(["libhsakmt"], :libhsakmt)]
 dependencies = [
     Dependency("NUMA_jll"),
@@ -33,4 +32,4 @@ dependencies = [
 
 build_tarballs(
     ARGS, name, version, sources, script, platforms, products, dependencies;
-    preferred_gcc_version=v"9", preferred_llvm_version=v"12")
+    preferred_gcc_version=v"7", preferred_llvm_version=v"9", julia_compat="1.8")

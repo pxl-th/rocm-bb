@@ -17,14 +17,13 @@ cd ${WORKSPACE}/srcdir/ROCm-CompilerSupport*/lib/comgr
 mv ${WORKSPACE}/srcdir/scripts/* ${prefix}
 mkdir build && cd build
 
-export PATH="${prefix}/bin:${prefix}/tools:${PATH}"
-
 CC=${prefix}/rocm-clang \
 CXX=${prefix}/rocm-clang++ \
 cmake -DCMAKE_PREFIX_PATH=${prefix} \
       -DCMAKE_INSTALL_PREFIX=${prefix} \
-      -DLLVM_DIR="${prefix}/lib/cmake/llvm" \
-      -DClang_DIR="${prefix}/lib/cmake/clang" \
+      -DLLVM_DIR=${prefix}/llvm/lib/cmake/llvm \
+      -DLLD_DIR=${prefix}/llvm/lib/cmake/lld \
+      -DClang_DIR=${prefix}/llvm/lib/cmake/clang \
       -DROCM_DIR=${prefix} \
       -DBUILD_TESTING:BOOL=OFF \
       ..
@@ -39,7 +38,11 @@ products = [LibraryProduct(["libamd_comgr"], :libamd_comgr)]
 
 DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
-    BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
+    # BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
+    BuildDependency(PackageSpec(;
+        name="ROCmLLVM_jll",
+        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
+        version)),
     BuildDependency(PackageSpec(;
         name="rocm_cmake_jll",
         path=joinpath(DEV_DIR, "rocm_cmake_jll"),
@@ -56,4 +59,4 @@ dependencies = [
 
 build_tarballs(
     ARGS, name, version, sources, script, platforms, products, dependencies,
-    preferred_gcc_version=v"9", preferred_llvm_version=v"12")
+    preferred_gcc_version=v"7", preferred_llvm_version=v"9", julia_compat="1.7")

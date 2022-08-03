@@ -27,4 +27,4 @@ fi
 if [ ${USE_CCACHE} == "true" ]; then
     CCACHE="ccache"
 fi
-${CCACHE} ${prefix}/tools/clang++ "${PRE_FLAGS[@]}" "${ARGS[@]}" "${POST_FLAGS[@]}"
+${CCACHE} ${prefix}/llvm/bin/clang++ "${PRE_FLAGS[@]}" "${ARGS[@]}" "${POST_FLAGS[@]}"
