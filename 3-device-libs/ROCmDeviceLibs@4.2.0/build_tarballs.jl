@@ -28,11 +28,7 @@ products = [FileProduct("amdgcn/bitcode/", :bitcode_path)]
 
 DEV_DIR = ENV["JULIA_DEV_DIR"]
 dependencies = [
-    # BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
-    BuildDependency(PackageSpec(;
-        name="ROCmLLVM_jll",
-        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
-        version)),
+    BuildDependency(PackageSpec(; name="ROCmLLVM_jll", version)),
     Dependency("Zlib_jll"),
 ]
 build_tarballs(
