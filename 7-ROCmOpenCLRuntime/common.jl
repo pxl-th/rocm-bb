@@ -18,14 +18,13 @@ const ROCM_PLATFORMS = [
 const BUILDSCRIPT = raw"""
 mv ${WORKSPACE}/srcdir/scripts/* ${prefix}
 
-export PATH="${prefix}/bin:${prefix}/tools:${PATH}"
 export ROCclr_DIR=$(realpath ${WORKSPACE}/srcdir/ROCclr-*)
 export OPENCL_SRC=$(realpath ${WORKSPACE}/srcdir/ROCm-OpenCL-Runtime-*)
 
 # Build ROCclr
 cd ${ROCclr_DIR}
 
-# Link rt.
+# Link rt. OpenCL needs it, otherwise we get `undefined symbol: clock_gettime`.
 # atomic_patch -p1 $WORKSPACE/srcdir/patches/rocclr-link-lrt.patch
 
 mkdir build && cd build
@@ -36,19 +35,35 @@ cmake \
     -DCMAKE_PREFIX_PATH=${prefix} \
     -DCMAKE_INSTALL_PREFIX=${prefix} \
     -DCMAKE_BUILD_TYPE=Release \
-    -DAMD_OPENCL_INCLUDE_DIR=${OPENCL_SRC}/amdocl \
+    -DOPENCL_DIR=${OPENCL_SRC} \
     ..
-# -DOPENCL_DIR=${OPENCL_SRC} \
+# -DAMD_OPENCL_INCLUDE_DIR=${OPENCL_SRC} \
 
 make -j${nproc}
 make install
 
-# TODO Build OpenCL
+# Build OpenCL.
+cd ${OPENCL_SRC}
+mkdir build && cd build
+
+CC=${prefix}/rocm-clang \
+CXX=${prefix}/rocm-clang++ \
+cmake \
+    -DCMAKE_PREFIX_PATH="${ROCclr_DIR}/build;${prefix}" \
+    -DCMAKE_INSTALL_PREFIX=${prefix} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DUSE_COMGR_LIBRARY=ON \
+    -DBUILD_TESTS:BOOL=OFF \
+    -DBUILD_TESTING:BOOL=OFF \
+    ..
+
+make -j${nproc}
+make install
 """
 
 const PRODUCTS = [
     FileProduct("lib/libamdrocclr_static.a", :libamdrocclr_static),
-    # TODO: LibraryProduct(["libOpenCL"], :libOpenCL),
+    LibraryProduct(["libOpenCL"], :libOpenCL),
 ]
 const NAME = "ROCmOpenCLRuntime"
 
