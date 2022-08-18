@@ -14,6 +14,7 @@ const ROCM_PLATFORMS = [
     # Platform("x86_64", "linux"; libc="musl", cxxstring_abi="cxx11"),
 ]
 
+# TODO remove unused stuff
 const BUILDSCRIPT420 = raw"""
 mv ${WORKSPACE}/srcdir/scripts/rocm-clang* ${prefix}
 

@@ -15,59 +15,100 @@ const ROCM_PLATFORMS = [
     # Platform("x86_64", "linux"; libc="musl", cxxstring_abi="cxx11"),
 ]
 
-const BUILDSCRIPT = raw"""
-mv ${WORKSPACE}/srcdir/scripts/* ${prefix}
+const CLR_PATCHES = Dict(
+    v"4.2.0" => raw"""
+    # Link rt. OpenCL needs it, otherwise we get `undefined symbol: clock_gettime`.
+    atomic_patch -p1 $WORKSPACE/srcdir/patches/rocclr-link-lrt.patch
+    """,
+    v"4.5.2" => "",
+)
 
-export ROCclr_DIR=$(realpath ${WORKSPACE}/srcdir/ROCclr-*)
-export OPENCL_SRC=$(realpath ${WORKSPACE}/srcdir/ROCm-OpenCL-Runtime-*)
+const CLR_CMAKE = Dict(
+    v"4.2.0" => raw"""
+    CC=${prefix}/rocm-clang CXX=${prefix}/rocm-clang++ \
+    cmake \
+        -DCMAKE_PREFIX_PATH=${prefix} \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/rocclr \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DOPENCL_DIR=${OPENCL_SRC} \
+        ..
+    make -j${nproc}
+    make install
+    """,
+    v"4.5.2" => raw"""
+    CC=${prefix}/rocm-clang CXX=${prefix}/rocm-clang++ \
+    cmake \
+        -DCMAKE_PREFIX_PATH=${prefix} \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/rocclr \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DAMD_OPENCL_PATH=${OPENCL_SRC} \
+        ..
+    make -j${nproc} # already has .a at this point, no install target
+    """,
+)
 
-# Build ROCclr
-cd ${ROCclr_DIR}
-
-# Link rt. OpenCL needs it, otherwise we get `undefined symbol: clock_gettime`.
-# atomic_patch -p1 $WORKSPACE/srcdir/patches/rocclr-link-lrt.patch
-
-mkdir build && cd build
-
-CC=${prefix}/rocm-clang \
-CXX=${prefix}/rocm-clang++ \
-cmake \
-    -DCMAKE_PREFIX_PATH=${prefix} \
-    -DCMAKE_INSTALL_PREFIX=${prefix} \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DOPENCL_DIR=${OPENCL_SRC} \
-    ..
-# -DAMD_OPENCL_INCLUDE_DIR=${OPENCL_SRC} \
-
-make -j${nproc}
-make install
-
-# Build OpenCL.
-cd ${OPENCL_SRC}
-mkdir build && cd build
-
-CC=${prefix}/rocm-clang \
-CXX=${prefix}/rocm-clang++ \
-cmake \
-    -DCMAKE_PREFIX_PATH="${ROCclr_DIR}/build;${prefix}" \
-    -DCMAKE_INSTALL_PREFIX=${prefix} \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DUSE_COMGR_LIBRARY=ON \
-    -DBUILD_TESTS:BOOL=OFF \
-    -DBUILD_TESTING:BOOL=OFF \
-    ..
-
-make -j${nproc}
-make install
-"""
+const CL_CMAKE = Dict(
+    v"4.2.0" => raw"""
+    CC=${prefix}/rocm-clang \
+    CXX=${prefix}/rocm-clang++ \
+    cmake \
+        -DCMAKE_PREFIX_PATH="${ROCclr_DIR}/build;${prefix}" \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/opencl \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DUSE_COMGR_LIBRARY=ON \
+        -DBUILD_TESTS:BOOL=OFF \
+        -DBUILD_TESTING:BOOL=OFF \
+        ..
+    make -j${nproc}
+    make install
+    """,
+    v"4.5.2" => raw"""
+    CC=${prefix}/rocm-clang \
+    CXX=${prefix}/rocm-clang++ \
+    cmake \
+        -DCMAKE_PREFIX_PATH="${ROCclr_DIR}/build;${prefix}" \
+        -DCMAKE_INSTALL_PREFIX=${prefix} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DROCM_PATH=${prefix} \
+        -DAMD_OPENCL_PATH=${OPENCL_SRC} \
+        -DROCCLR_INCLUDE_DIR=${ROCclr_DIR}/include \
+        -DBUILD_TESTS:BOOL=OFF \
+        -DBUILD_TESTING:BOOL=OFF \
+        ..
+    make -j${nproc}
+    make install
+    """,
+)
 
 const PRODUCTS = [
-    FileProduct("lib/libamdrocclr_static.a", :libamdrocclr_static),
+    # TODO add this for 4.5.2
+    # FileProduct("lib/libamdrocclr_static.a", :libamdrocclr_static),
     LibraryProduct(["libOpenCL"], :libOpenCL),
 ]
 const NAME = "ROCmOpenCLRuntime"
 
 function configure_build(version)
+    buildscript = raw"""
+    mv ${WORKSPACE}/srcdir/scripts/* ${prefix}
+
+    export ROCclr_DIR=$(realpath ${WORKSPACE}/srcdir/ROCclr-*)
+    export OPENCL_SRC=$(realpath ${WORKSPACE}/srcdir/ROCm-OpenCL-Runtime-*)
+
+    # Build ROCclr
+    cd ${ROCclr_DIR}
+    """ *
+    CLR_PATCHES[version] *
+    raw"""
+    mkdir build && cd build
+    """ *
+    CLR_CMAKE[version] *
+    raw"""
+    # Build OpenCL.
+    cd ${OPENCL_SRC}
+    mkdir build && cd build
+    """ *
+    CL_CMAKE[version]
+
     sources = [
         ArchiveSource(
             ROCM_GIT * "archive/rocm-$(version).tar.gz", GIT_TAGS[version]),
@@ -97,5 +138,5 @@ function configure_build(version)
         Dependency("Xorg_libX11_jll"),
         Dependency("Xorg_xorgproto_jll"),
     ]
-    NAME, version, sources, BUILDSCRIPT, ROCM_PLATFORMS, PRODUCTS, dependencies
+    NAME, version, sources, buildscript, ROCM_PLATFORMS, PRODUCTS, dependencies
 end
