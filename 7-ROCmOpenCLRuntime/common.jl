@@ -1,3 +1,4 @@
+using Base: product
 const ROCM_GIT = "https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime/"
 const ROCM_GIT_CLR = "https://github.com/ROCm-Developer-Tools/ROCclr/"
 
@@ -43,7 +44,7 @@ const CLR_CMAKE = Dict(
         -DCMAKE_BUILD_TYPE=Release \
         -DAMD_OPENCL_PATH=${OPENCL_SRC} \
         ..
-    make -j${nproc} # already has .a at this point, no install target
+    make -j${nproc} # no install target
     """,
 )
 
@@ -67,7 +68,7 @@ const CL_CMAKE = Dict(
     CXX=${prefix}/rocm-clang++ \
     cmake \
         -DCMAKE_PREFIX_PATH="${ROCclr_DIR}/build;${prefix}" \
-        -DCMAKE_INSTALL_PREFIX=${prefix} \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/opencl \
         -DCMAKE_BUILD_TYPE=Release \
         -DROCM_PATH=${prefix} \
         -DAMD_OPENCL_PATH=${OPENCL_SRC} \
@@ -80,11 +81,6 @@ const CL_CMAKE = Dict(
     """,
 )
 
-const PRODUCTS = [
-    # TODO add this for 4.5.2
-    # FileProduct("lib/libamdrocclr_static.a", :libamdrocclr_static),
-    LibraryProduct(["libOpenCL"], :libOpenCL),
-]
 const NAME = "ROCmOpenCLRuntime"
 
 function configure_build(version)
@@ -116,6 +112,11 @@ function configure_build(version)
             ROCM_GIT_CLR * "archive/rocm-$(version).tar.gz", GIT_TAGS_CLR[version]),
         DirectorySource("./bundled"),
     ]
+    products = Product[LibraryProduct(["libOpenCL"], :libOpenCL, "opencl/lib")]
+    if version == v"4.2.0"
+        push!(products, FileProduct(
+            "rocclr/libamdrocclr_static.a", :libamdrocclr_static))
+    end
 
     DEV_DIR = ENV["JULIA_DEV_DIR"]
     dependencies = [
@@ -138,5 +139,5 @@ function configure_build(version)
         Dependency("Xorg_libX11_jll"),
         Dependency("Xorg_xorgproto_jll"),
     ]
-    NAME, version, sources, buildscript, ROCM_PLATFORMS, PRODUCTS, dependencies
+    NAME, version, sources, buildscript, ROCM_PLATFORMS, products, dependencies
 end

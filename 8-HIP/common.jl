@@ -1,6 +1,11 @@
 const HIPAMD_GIT = "https://github.com/ROCm-Developer-Tools/hipamd/"
 const HIP_GIT = "https://github.com/ROCm-Developer-Tools/HIP/"
 
+# Needed, since ROCclr is no longer can be built as standalone project.
+# So we build it here as well as in ROCmOpenCLRuntime.
+const ROCM_GIT_CL = "https://github.com/RadeonOpenCompute/ROCm-OpenCL-Runtime/"
+const ROCM_GIT_CLR = "https://github.com/ROCm-Developer-Tools/ROCclr/"
+
 const HIPAMD_GIT_TAGS = Dict(
     v"4.5.2" => "b6f35b1a1d0c466b5af28e26baf646ae63267eccc4852204db1e0c7222a39ce2",
 )
@@ -9,76 +14,37 @@ const HIP_GIT_TAGS = Dict(
     v"4.5.2" => "c2113dc3c421b8084cd507d91b6fbc0170765a464b71fb0d96bb875df368f160",
 )
 
+const GIT_TAGS_CL = Dict(
+    v"4.5.2" => "96b43f314899707810db92149caf518bdb7cf39f7c0ad86e98ad687ffb0d396d",
+)
+const GIT_TAGS_CLR = Dict(
+    v"4.5.2" => "6581916a3303a31f76454f12f86e020fb5e5c019f3dbb0780436a8f73792c4d1",
+)
+
 const ROCM_PLATFORMS = [
     Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11"),
     # Platform("x86_64", "linux"; libc="musl", cxxstring_abi="cxx11"),
 ]
 
-# TODO remove unused stuff
-const BUILDSCRIPT420 = raw"""
-mv ${WORKSPACE}/srcdir/scripts/rocm-clang* ${prefix}
+const CLR_CMAKE = Dict(
+    v"4.2.0" => "",
+    v"4.5.2" => raw"""
+    export ROCclr_DIR=$(realpath ${WORKSPACE}/srcdir/ROCclr-*)
+    export OPENCL_SRC=$(realpath ${WORKSPACE}/srcdir/ROCm-OpenCL-Runtime-*)
 
-cd ${WORKSPACE}/srcdir/HIP*/
-
-# Disable tests.
-atomic_patch -p1 "${WORKSPACE}/srcdir/patches/disable-tests.patch"
-
-mkdir build && cd build
-
-# Sets HIP_COMPILER=clang & HIP_RUNTIME=rocclr.
-export HIP_RUNTIME=rocclr
-export HIP_COMPILER=clang
-export HIP_PLATFORM=amd
-export HSA_PATH=${prefix}/hsa
-export PATH="${prefix}/bin:${prefix}/tools:${PATH}"
-
-CC=${prefix}/rocm-clang \
-CXX=${prefix}/rocm-clang++ \
-CXXFLAGS="-isystem ${prefix}/include/include -isystem ${prefix}/include/compiler/lib -isystem ${prefix}/include/compiler/lib/include -isystem ${prefix}/include/elf $CXXFLAGS " \
-cmake \
-    -DCMAKE_INSTALL_PREFIX=${prefix}/hip \
-    -DCMAKE_PREFIX_PATH=${prefix} \
-    -DROCM_PATH=${prefix} \
-    -DHSA_PATH=${prefix}/hsa \
-    -DHIP_PLATFORM=${HIP_PLATFORM} \
-    -DHIP_RUNTIME=${HIP_RUNTIME} \
-    -DHIP_COMPILER=${HIP_COMPILER} \
-    -D__HIP_ENABLE_PCH=OFF \
-    ..
-
-make -j${nproc}
-make install
-"""
-
-const BUILDSCRIPT = raw"""
-mv ${WORKSPACE}/srcdir/scripts/rocm-clang* ${prefix}
-
-cd ${WORKSPACE}/srcdir/hipamd*/
-
-mkdir build && cd build
-
-# Sets HIP_COMPILER=clang & HIP_RUNTIME=rocclr.
-export HIP_RUNTIME=rocclr
-export HIP_COMPILER=clang
-export HIP_PLATFORM=amd
-export HSA_PATH=${prefix}/hsa
-
-CC=${prefix}/rocm-clang \
-CXX=${prefix}/rocm-clang++ \
-cmake \
-    -DCMAKE_INSTALL_PREFIX=${prefix}/hip \
-    -DCMAKE_PREFIX_PATH=${prefix} \
-    -DROCM_PATH=${prefix} \
-    -DHSA_PATH=${prefix}/hsa \
-    -DHIP_PLATFORM=${HIP_PLATFORM} \
-    -DHIP_RUNTIME=${HIP_RUNTIME} \
-    -DHIP_COMPILER=${HIP_COMPILER} \
-    -D__HIP_ENABLE_PCH=OFF \
-    ..
-
-make -j${nproc}
-make install
-"""
+    # Build ROCclr
+    cd ${ROCclr_DIR}
+    mkdir build && cd build
+    CC=${prefix}/rocm-clang CXX=${prefix}/rocm-clang++ \
+    cmake \
+        -DCMAKE_PREFIX_PATH=${prefix} \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/rocclr \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DAMD_OPENCL_PATH=${OPENCL_SRC} \
+        ..
+    make -j${nproc} # no install target
+    """,
+)
 
 const NAME = "HIP"
 const PRODUCTS = [
@@ -88,17 +54,48 @@ const PRODUCTS = [
 
 function configure_build(version)
     archive = "archive/rocm-$version.tar.gz"
-    if version == v"4.2.0"
-        sources = [
-            ArchiveSource(HIP_GIT * archive, HIP_GIT_TAGS[version]),
-            DirectorySource("./bundled"),
-        ]
-    else
-        sources = [
+
+    buildscript = raw"""
+    mv ${WORKSPACE}/srcdir/scripts/rocm-clang* ${prefix}
+    """ *
+    CLR_CMAKE[version] *
+    raw"""
+    cd ${WORKSPACE}/srcdir/hipamd*/
+    mkdir build && cd build
+    export HIP_DIR=$(realpath ${WORKSPACE}/srcdir/HIP-*)
+
+    CC=${prefix}/rocm-clang CXX=${prefix}/rocm-clang++ \
+    cmake \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/hip \
+        -DCMAKE_PREFIX_PATH="${ROCclr_DIR}/build;${prefix}" \
+        -DROCM_PATH=${prefix} \
+        -DHIP_PLATFORM=amd \
+        -DHIP_RUNTIME=rocclr \
+        -DHIP_COMPILER=clang \
+        -D__HIP_ENABLE_PCH=OFF \
+        -DROCCLR_INCLUDE_DIR=${ROCclr_DIR}/include \
+        -DROCCLR_PATH=${ROCclr_DIR} \
+        -DHIP_COMMON_DIR=${HIP_DIR} \
+        -DAMD_OPENCL_PATH=${OPENCL_SRC} \
+        -DCMAKE_HIP_ARCHITECTURES="gfx906:xnack-" \
+        -DLLVM_DIR="${prefix}/llvm/lib/cmake/llvm" \
+        -DClang_DIR="${prefix}/llvm/lib/cmake/clang" \
+        ..
+
+    make -j${nproc}
+    make install
+    """
+
+    sources = [
+        ArchiveSource(HIP_GIT * archive, HIP_GIT_TAGS[version]),
+        DirectorySource("./bundled"),
+    ]
+    if version == v"4.5.2"
+        push!(
+            sources,
             ArchiveSource(HIPAMD_GIT * archive, HIPAMD_GIT_TAGS[version]),
-            ArchiveSource(HIP_GIT * archive, HIP_GIT_TAGS[version]),
-            DirectorySource("./bundled"),
-        ]
+            ArchiveSource(ROCM_GIT_CL * "archive/rocm-$(version).tar.gz", GIT_TAGS_CL[version]),
+            ArchiveSource(ROCM_GIT_CLR * "archive/rocm-$(version).tar.gz", GIT_TAGS_CLR[version]))
     end
 
     DEV_DIR = ENV["JULIA_DEV_DIR"]
@@ -127,6 +124,5 @@ function configure_build(version)
             path=joinpath(DEV_DIR, "ROCmOpenCLRuntime_jll"));
             compat=string(version)),
     ]
-    buildscript = version == v"4.2.0" ? BUILDSCRIPT420 : BUILDSCRIPT
     NAME, version, sources, buildscript, ROCM_PLATFORMS, PRODUCTS, dependencies
 end
