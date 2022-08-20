@@ -1,16 +1,18 @@
-using Pkg
-using BinaryBuilder
+const ROCM_GIT = "https://github.com/ROCmSoftwarePlatform/rocBLAS/"
+const NAME = "rocBLAS"
 
-name = "rocBLAS"
-version = v"4.2.0"
+const GIT_TAGS = Dict(
+    v"4.2.0" => "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0",
+    v"4.5.2" => "15d725e38f91d1ff7772c4204b97c1515af58fa7b8ec2a2014b99b6d337909c4",
+)
 
-sources = [
-    ArchiveSource(
-        "https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-$(version).tar.gz",
-        "547f6d5d38a41786839f01c5bfa46ffe9937b389193a8891f251e276a1a47fb0"),
+const ROCM_PLATFORMS = [
+    Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11"),
+    # Platform("x86_64", "linux"; libc="musl", cxxstring_abi="cxx11"),
 ]
+const PRODUCTS = [LibraryProduct(["librocblas"], :librocblas, ["rocblas/lib"])]
 
-script = raw"""
+const BUILDSCRIPT = raw"""
 cd ${WORKSPACE}/srcdir/rocBLAS*/
 mkdir build
 
@@ -86,42 +88,36 @@ cmake -S . -B build \
 make -j${nproc} -C build install
 """
 
-platforms = [Platform("x86_64", "linux"; libc="glibc", cxxstring_abi="cxx11")]
-platforms = expand_cxxstring_abis(platforms)
-
-products = [LibraryProduct(["librocblas"], :librocblas, ["rocblas/lib"])]
-
-DEV_DIR = ENV["JULIA_DEV_DIR"]
-dependencies = [
-    # BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
-    BuildDependency(PackageSpec(;
-        name="ROCmLLVM_jll",
-        path=joinpath(DEV_DIR, "ROCmLLVM_jll"),
-        version)),
-    BuildDependency(PackageSpec(;
-        name="rocm_cmake_jll", version,
-        path=joinpath(DEV_DIR, "rocm_cmake_jll"))),
-    Dependency(PackageSpec(;
-        name="ROCmCompilerSupport_jll",
-        path=joinpath(DEV_DIR, "ROCmCompilerSupport_jll"));
-        compat=string(version)),
-    Dependency(PackageSpec(;
-        name="ROCmOpenCLRuntime_jll",
-        path=joinpath(DEV_DIR, "ROCmOpenCLRuntime_jll"));
-        compat=string(version)),
-    Dependency(PackageSpec(;
-        name="rocminfo_jll", path=joinpath(DEV_DIR, "rocminfo_jll"));
-        compat=string(version)),
-    Dependency(PackageSpec(;
-        name="hsa_rocr_jll",
-        path=joinpath(DEV_DIR, "hsa_rocr_jll"));
-        compat=string(version)),
-    Dependency(PackageSpec(;
-        name="HIP_jll", path=joinpath(DEV_DIR, "HIP_jll"));
-        compat=string(version)),
-    Dependency("IntelOpenMP_jll"),
-]
-
-build_tarballs(
-    ARGS, name, version, sources, script, platforms, products, dependencies,
-    preferred_gcc_version=v"7", preferred_llvm_version=v"9")
+function configure_build(version)
+    sources = [
+        ArchiveSource(
+            ROCM_GIT * "archive/rocm-$(version).tar.gz", GIT_TAGS[version]),
+    ]
+    DEV_DIR = ENV["JULIA_DEV_DIR"]
+    dependencies = [
+        BuildDependency(PackageSpec(;name="ROCmLLVM_jll", version)),
+        BuildDependency(PackageSpec(;
+            name="rocm_cmake_jll", version,
+            path=joinpath(DEV_DIR, "rocm_cmake_jll"))),
+        Dependency(PackageSpec(;
+            name="ROCmCompilerSupport_jll",
+            path=joinpath(DEV_DIR, "ROCmCompilerSupport_jll"));
+            compat=string(version)),
+        Dependency(PackageSpec(;
+            name="ROCmOpenCLRuntime_jll",
+            path=joinpath(DEV_DIR, "ROCmOpenCLRuntime_jll"));
+            compat=string(version)),
+        Dependency(PackageSpec(;
+            name="rocminfo_jll", path=joinpath(DEV_DIR, "rocminfo_jll"));
+            compat=string(version)),
+        Dependency(PackageSpec(;
+            name="hsa_rocr_jll",
+            path=joinpath(DEV_DIR, "hsa_rocr_jll"));
+            compat=string(version)),
+        Dependency(PackageSpec(;
+            name="HIP_jll", path=joinpath(DEV_DIR, "HIP_jll"));
+            compat=string(version)),
+        Dependency("IntelOpenMP_jll"),
+    ]
+    NAME, version, sources, BUILDSCRIPT, ROCM_PLATFORMS, PRODUCTS, dependencies
+end
