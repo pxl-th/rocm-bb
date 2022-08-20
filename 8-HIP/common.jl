@@ -46,20 +46,32 @@ const CLR_CMAKE = Dict(
     """,
 )
 
-const NAME = "HIP"
-const PRODUCTS = [
-    LibraryProduct(["libamdhip64"], :libamdhip64, ["hip/lib"]),
-    ExecutableProduct("hipcc", :hipcc, "hip/bin"),
-]
+const HIP_CMAKE = Dict(
+    v"4.2.0" => raw"""
+    cd ${WORKSPACE}/srcdir/HIP*/
 
-function configure_build(version)
-    archive = "archive/rocm-$version.tar.gz"
+    # Disable tests.
+    atomic_patch -p1 "${WORKSPACE}/srcdir/patches/disable-tests.patch"
+    mkdir build && cd build
 
-    buildscript = raw"""
-    mv ${WORKSPACE}/srcdir/scripts/rocm-clang* ${prefix}
-    """ *
-    CLR_CMAKE[version] *
-    raw"""
+    CC=${prefix}/rocm-clang CXX=${prefix}/rocm-clang++ \
+    CXXFLAGS="-isystem ${prefix}/rocclr/include/elf -isystem ${prefix}/include/elfutils -isystem ${prefix}/rocclr/include/compiler/lib/include $CXXFLAGS " \
+    cmake \
+        -DCMAKE_INSTALL_PREFIX=${prefix}/hip \
+        -DCMAKE_PREFIX_PATH=${prefix} \
+        -DROCM_PATH=${prefix} \
+        -DHSA_PATH=${prefix}/hsa \
+        -DHIP_PLATFORM=amd \
+        -DHIP_RUNTIME=rocclr \
+        -DHIP_COMPILER=clang \
+        -D__HIP_ENABLE_PCH=OFF \
+        -DLLVM_DIR="${prefix}/llvm/lib/cmake/llvm" \
+        -DClang_DIR="${prefix}/llvm/lib/cmake/clang" \
+        ..
+    make -j${nproc}
+    make install
+    """,
+    v"4.5.2" => raw"""
     cd ${WORKSPACE}/srcdir/hipamd*/
     mkdir build && cd build
     export HIP_DIR=$(realpath ${WORKSPACE}/srcdir/HIP-*)
@@ -85,6 +97,22 @@ function configure_build(version)
     make -j${nproc}
     make install
     """
+)
+
+const NAME = "HIP"
+const PRODUCTS = [
+    LibraryProduct(["libamdhip64"], :libamdhip64, ["hip/lib"]),
+    ExecutableProduct("hipcc", :hipcc, "hip/bin"),
+]
+
+function configure_build(version)
+    archive = "archive/rocm-$version.tar.gz"
+
+    buildscript = raw"""
+    mv ${WORKSPACE}/srcdir/scripts/rocm-clang* ${prefix}
+    """ *
+    CLR_CMAKE[version] *
+    HIP_CMAKE[version]
 
     sources = [
         ArchiveSource(HIP_GIT * archive, HIP_GIT_TAGS[version]),

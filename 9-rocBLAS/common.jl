@@ -19,7 +19,6 @@ mkdir build
 export ROCM_PATH=${prefix}
 export HIP_PATH=${prefix}/hip
 
-# HIP env variables: https://github.com/ROCm-Developer-Tools/HIP/blob/rocm-4.2.0/bin/hipcc
 export HIP_PLATFORM=amd
 export HIP_RUNTIME=rocclr
 export HIP_COMPILER=clang

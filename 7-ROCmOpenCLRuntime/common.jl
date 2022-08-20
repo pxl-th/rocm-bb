@@ -115,7 +115,7 @@ function configure_build(version)
     products = Product[LibraryProduct(["libOpenCL"], :libOpenCL, "opencl/lib")]
     if version == v"4.2.0"
         push!(products, FileProduct(
-            "rocclr/libamdrocclr_static.a", :libamdrocclr_static))
+            "rocclr/lib/libamdrocclr_static.a", :libamdrocclr_static))
     end
 
     DEV_DIR = ENV["JULIA_DEV_DIR"]
